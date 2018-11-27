@@ -18,14 +18,14 @@ import javax.validation.constraints.NotNull;
 public class SearchClassesRequest implements DateTimeRangeBasedRequest {
 
     /**
-     * Defines start of the timerange for Class search
+     * Defines start of the timerange for S search
      */
     @NotNull
     @DateTimeFormat(iso = DATE_TIME)
     private ZonedDateTime startDateTime;
 
     /**
-     * Defines end of the timerange for Class search
+     * Defines end of the timerange for S search
      */
     @NotNull
     @DateTimeFormat(iso = DATE_TIME)

@@ -15,7 +15,7 @@ class CApiController {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     /**
-     * This operation searches GroupX Classes by date range. It returns only brief information about GroupX Classes.
+     * This operation searches S by date range. It returns only brief information about S.
      */
     @GetMapping("/group-classes/v1.0/classes")
     @Nullable Iterable<Object> searchClasses(@ModelAttribute @Validated(String.class) SearchClassesRequest searchClassesRequest) {

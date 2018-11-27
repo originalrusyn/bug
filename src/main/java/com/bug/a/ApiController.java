@@ -14,11 +14,11 @@ import javax.annotation.Nullable;
 class ApiController {
 
     /**
-     * This operation returns all detailed information about GroupX Class.
-     * @param authTokenInfo This header contains User Secret in Partner system.
-     * @param supplierId This header contains User ID in Partner system. Required for every canonical operation which supports API access restriction on User level.
-     * @param exerciserId ClubMS Exerciser Unique ID which is returned by Canonical Users API and/or by Canonical Members API
-     * @param classId ClubMS Class Unique ID
+     * This operation returns all detailed information about S.
+     * @param authTokenInfo This header contains S in system.
+     * @param supplierId This header contains User ID in S. Required for every canonical operation which supports API access restriction on User level.
+     * @param exerciserId Unique ID which is returned by API and/or by  API
+     * @param classId Unique ID
      */
     @GetMapping("/group-classes/v1.0/classes/{classId}")
     @Nullable String search(@PathVariable long classId,
