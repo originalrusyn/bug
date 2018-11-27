@@ -1,0 +1,238 @@
+buildscript {
+    ext {
+        springBootVersion = '2.1.0.RELEASE'
+        immutablesVersion = '2.7.3'
+        errorProneVersion = '2.3.2'
+        springAutoRestDocsVersion = '2.0.2'
+    }
+    repositories {
+        mavenCentral()
+        maven { url "https://plugins.gradle.org/m2/" }
+    }
+    dependencies {
+        classpath ("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+        classpath 'net.ltgt.gradle:gradle-errorprone-plugin:0.6'
+        classpath "net.ltgt.gradle:gradle-apt-plugin:0.19"
+    }
+}
+
+plugins {
+    id "org.asciidoctor.convert" version "1.5.8.1"
+}
+apply plugin: 'java-library'
+apply plugin: 'idea'
+apply plugin: 'org.springframework.boot'
+apply plugin: 'io.spring.dependency-management'
+apply plugin: 'net.ltgt.errorprone'
+apply plugin: 'net.ltgt.apt'
+apply plugin: 'net.ltgt.apt-idea'
+apply plugin: "jacoco"
+
+sourceCompatibility = 1.11
+
+compileJava {
+    dependsOn(processResources)
+    options.compilerArgs << "-deprecation" << "-Werror"
+    options.errorprone.errorproneArgs += ['-Xep:MutableMethodReturnType:ERROR',
+                             '-Xep:ReturnMissingNullable:ERROR', '-Xep:ParameterNotNullable:ERROR',
+                             '-Xep:FieldMissingNullable:ERROR', '-XepExcludedPaths:.*/generated/.*',
+                             "-Xep:NullAway:ERROR", "-XepOpt:NullAway:AnnotatedPackages=com.bug",
+                             "-XepOpt:NullAway:ExcludedClassAnnotations=javax.annotation.Generated"]
+}
+
+repositories {
+    mavenCentral()
+}
+
+configurations {
+    jsondoclet
+    errorprone.resolutionStrategy.force "com.google.errorprone:error_prone_core:${errorProneVersion}"
+    all*.exclude group: "commons-logging", module: "commons-logging"
+    all*.exclude group: "org.springframework.boot", module: "spring-boot-starter-logging"
+    all*.exclude group: "org.slf4j", module: "log4j-over-slf4j"
+    all*.exclude group: "org.slf4j", module: "slf4j-log4j12"
+    all*.exclude group: "joda-time", module: "joda-time"
+    all*.exclude group: "org.apache.activemq"
+    providedRuntime
+}
+
+ext {
+    snippetsDir = file("$buildDir/generated-snippets")
+    javadocJsonDir = file("$buildDir/generated-javadoc-json")
+}
+
+dependencyManagement {
+    imports {
+        mavenBom (org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES) {
+            bomProperty 'log4j2.version', '2.8.1'
+        }
+    }
+}
+
+dependencies {
+    annotationProcessor "org.immutables:value:${immutablesVersion}"
+    annotationProcessor "org.springframework.boot:spring-boot-configuration-processor"
+    annotationProcessor "com.uber.nullaway:nullaway:0.6.3"
+
+    errorprone "com.google.errorprone:error_prone_core:${errorProneVersion}"
+
+    api "org.springframework.boot:spring-boot-autoconfigure"
+    api "org.springframework.boot:spring-boot-starter-aop"
+    api "org.springframework.boot:spring-boot-starter-json"
+    api "org.springframework.boot:spring-boot-starter-cache"
+    api "org.springframework.boot:spring-boot-starter-validation"
+    api "org.springframework.boot:spring-boot-starter-web"
+    api 'javax.validation:validation-api'
+    api "org.slf4j:slf4j-api"
+    api "com.google.code.findbugs:jsr305:3.0.1"
+    api "org.apache.httpcomponents:httpclient"
+    api "org.apache.commons:commons-lang3"
+    api 'com.fasterxml.jackson.core:jackson-core'
+    api 'com.fasterxml.jackson.core:jackson-databind'
+    api 'com.fasterxml.jackson.core:jackson-annotations'
+    api "com.fasterxml.jackson.datatype:jackson-datatype-guava"
+    api "com.fasterxml.jackson.datatype:jackson-datatype-jdk8"
+    api "javax.cache:cache-api"
+    api "com.google.guava:guava:23.6.1-jre"
+    implementation "javax.cache:cache-api"
+    implementation 'javax.xml.bind:jaxb-api'
+    implementation "com.sun.xml.bind:jaxb-ri:2.3.0"
+    implementation "org.glassfish.jaxb:jaxb-runtime:2.3.0"
+    implementation "net.bytebuddy:byte-buddy:1.9.2"
+    implementation "net.bytebuddy:byte-buddy-agent:1.9.2"
+
+    runtime "org.ehcache:ehcache"
+    runtime "org.springframework.boot:spring-boot-starter-tomcat"
+    runtime "org.springframework.boot:spring-boot-starter-actuator"
+    runtime "org.springframework.boot:spring-boot-starter-tomcat"
+    runtime "org.springframework.boot:spring-boot-starter-log4j2"
+    runtime "org.springframework.boot:spring-boot-devtools"
+    runtime "com.fasterxml.jackson.datatype:jackson-datatype-jsr310"
+    runtime "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml"
+    runtime "javax.cache:cache-api"
+
+    compileOnly "com.google.errorprone:error_prone_annotations:${errorProneVersion}"
+    compileOnly "org.immutables:value:${immutablesVersion}:annotations"
+
+    providedRuntime "org.springframework.boot:spring-boot-starter-tomcat"
+
+    testImplementation "org.springframework.boot:spring-boot-starter-test"
+    testImplementation 'org.springframework.restdocs:spring-restdocs-mockmvc'
+    testImplementation "capital.scalable:spring-auto-restdocs-core:${springAutoRestDocsVersion}"
+    testImplementation "org.mockito:mockito-core:2.23.0"
+    testImplementation "com.github.tomakehurst:wiremock-standalone:2.19.0"
+    testImplementation "org.skyscreamer:jsonassert:1.5.0"
+
+    jsondoclet "capital.scalable:spring-auto-restdocs-json-doclet-jdk9:${springAutoRestDocsVersion}"
+}
+
+task jsonDoclet(type: Javadoc, dependsOn: compileJava) {
+    source = sourceSets.main.allJava
+    classpath = sourceSets.main.compileClasspath + sourceSets.main.output
+    destinationDir = javadocJsonDir
+    options.docletpath = configurations.jsondoclet.files.asType(List)
+    options.doclet = 'capital.scalable.restdocs.jsondoclet.ExtractDocumentationAsJsonDoclet'
+    options.memberLevel = JavadocMemberLevel.PACKAGE
+}
+
+test {
+    useJUnit {
+        exclude '**/*IT.class'
+    }
+}
+
+task integrationTest(type: Test) {
+    useJUnit {
+        include '**/*IT.class'
+    }
+
+    systemProperty 'org.springframework.restdocs.outputDir', snippetsDir
+    systemProperty 'org.springframework.restdocs.javadocJsonDir', javadocJsonDir
+
+    dependsOn jsonDoclet
+
+    outputs.dir snippetsDir
+}
+
+jacoco.toolVersion = "0.8.2"
+
+jacocoTestReport {
+    dependsOn test
+
+    executionData(test)
+
+    afterEvaluate {
+        classDirectories = files(classDirectories.files.collect {
+
+            fileTree(dir: it, exclude: [
+                    '**/*Builder**',
+                    '**/*Immutable**',
+                    '**/*Controller**'
+            ])
+        })
+    }
+}
+
+task integrationTestJacocoRootReport(type: JacocoReport) {
+    dependsOn integrationTest
+    sourceDirectories = files(sourceSets.main.allSource.srcDirs)
+    classDirectories = files(sourceSets.main.output)
+    executionData(integrationTest)
+
+    afterEvaluate {
+        classDirectories = files(classDirectories.files.collect {
+
+            fileTree(dir: it, exclude: [
+                    '**/*Builder**'
+            ])
+        })
+    }
+}
+
+jacocoTestCoverageVerification {
+    dependsOn jacocoTestReport, integrationTestJacocoRootReport
+
+    afterEvaluate {
+        classDirectories = files(classDirectories.files.collect {
+
+            fileTree(dir: it, exclude: [
+                    '**/*Builder**',
+                    '**/*Immutable**',
+                    '**/*Controller**'
+            ])
+        })
+    }
+
+    violationRules {
+        rule {
+            limit {
+                minimum = 0.66
+            }
+        }
+    }
+}
+
+asciidoctor {
+    sourceDir = file('src/docs/asciidoc')
+    outputDir = file("$buildDir/generated-docs")
+    options backend: 'html', doctype: 'book'
+    attributes 'source-highlighter': 'highlightjs', 'snippets': snippetsDir
+
+    dependsOn integrationTest
+}
+
+asciidoctor.doLast {
+    copy {
+        from file("$buildDir/generated-docs/html5")
+        into file("src/main/resources/public/docs")
+        include 'api.html'
+    }
+}
+
+bootJar {
+    dependsOn asciidoctor, jacocoTestCoverageVerification
+
+    from( "$buildDir/generated-docs/html5" ){
+        into 'docs'
+    }
+}

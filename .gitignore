@@ -1,0 +1,16 @@
+.idea/
+.gradle/
+.settings/
+build/
+target/
+*.iml
+*~
+*.log
+*.log.*
+*.prefs
+*.orig
+local.gradle
+.classpath
+.project
+out/
+env.sh

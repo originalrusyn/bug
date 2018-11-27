@@ -1,0 +1,49 @@
+status: info
+monitorInterval: 30
+
+properties:
+  property:
+    - name: pattern
+      value: "%highlight{%d [%t] request_correlation_id=[%X{request_correlation_id}] request_user_id=[%X{request_user_id}] %-5p %C{1} - %m %rEx}%n"
+
+appenders:
+
+    Console:
+      - name: stdout
+        target: SYSTEM_OUT
+        ThresholdFilter:
+          level: warn
+          onMatch: deny
+          onMismatch: accept
+        PatternLayout: { pattern: "${pattern}" }
+
+      - name: stderr
+        target: SYSTEM_ERR
+        ThresholdFilter:
+          level: warn
+        PatternLayout: { pattern: "${pattern}" }
+
+loggers:
+    root:
+      level: info
+      appender-ref:
+        - ref: stdout
+        - ref: stderr
+    logger:
+      - name: org.springframework
+        level: info
+
+      - name: org.springframework.aop.interceptor.CustomizableTraceInterceptor
+        level: info
+
+      - name: httpclient.wire
+        level: info
+
+      - name: org.apache.commons
+        level: info
+
+      - name: org.jboss.logging
+        level: info
+
+      - name: com.bug
+        level: debug
